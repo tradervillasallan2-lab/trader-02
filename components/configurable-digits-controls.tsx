@@ -40,6 +40,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TradeTypeChips } from '@/components/custom/trade-type-chips';
 import { SymbolSelector } from '@/components/custom/symbol-selector';
+import { AutomationControls } from '@/components/automation-controls';
 import { useAppTranslations } from '@/components/custom/i18n-provider';
 import { getSubmarketDisplayName } from '@/lib/active-symbols-display-names';
 import { cn } from '@/lib/utils';
@@ -214,6 +215,14 @@ export interface ConfigurableDigitsControlsProps {
   isConnected: boolean;
   isAuthenticated?: boolean;
 
+  /** Auto-entry toggle — tapping a digit places the entry immediately. */
+  autoEntry?: boolean;
+  onAutoEntryChange?: (value: boolean) => void;
+  /** Soros toggle — reinvests a winning return into the next stake. */
+  sorosEnabled?: boolean;
+  onSorosChange?: (value: boolean) => void;
+  sorosLevel?: number;
+
   /** Edit mode — control blocks become selectable (click opens its accordion). */
   editMode?: boolean;
   /** Called when a control block is clicked in edit mode. */
@@ -271,6 +280,11 @@ export function ConfigurableDigitsControls(props: ConfigurableDigitsControlsProp
     isBuying,
     isConnected,
     isAuthenticated,
+    autoEntry,
+    onAutoEntryChange,
+    sorosEnabled,
+    onSorosChange,
+    sorosLevel,
     editMode,
     onSelect,
     selectedKey,
@@ -987,6 +1001,15 @@ export function ConfigurableDigitsControls(props: ConfigurableDigitsControlsProp
 
   return (
     <div className="w-full space-y-3 lg:space-y-4">
+      {showPositionsLink && onAutoEntryChange && onSorosChange && (
+        <AutomationControls
+          autoEntry={autoEntry ?? false}
+          onAutoEntryChange={onAutoEntryChange}
+          sorosEnabled={sorosEnabled ?? false}
+          onSorosChange={onSorosChange}
+          sorosLevel={sorosLevel ?? 0}
+        />
+      )}
       {orderedKeys.map((key) => {
         const content = renderers[key]();
         if (content === null) return null;

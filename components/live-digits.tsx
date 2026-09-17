@@ -88,6 +88,9 @@ export function LiveDigits({
       buyResult={trading.buyResult}
       buyError={trading.buyError}
       clearBuyResult={trading.clearBuyResult}
+      sorosEnabled={trading.sorosEnabled}
+      setSorosEnabled={trading.setSorosEnabled}
+      sorosLevel={trading.sorosLevel}
       appConfig={appConfig}
       editMode={editMode}
       onSelect={onSelect}
