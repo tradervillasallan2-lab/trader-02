@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { Localize } from '@deriv-com/translations';
@@ -103,6 +103,10 @@ export interface DigitsViewProps {
   buyResult: BuyResult | null;
   buyError: string | null;
   clearBuyResult: () => void;
+  // Soros (compounding) toggle
+  sorosEnabled: boolean;
+  setSorosEnabled: (enabled: boolean) => void;
+  sorosLevel: number;
   // Branding (used by preview route; no-op in the real app)
   logoSrc?: string;
   appName?: string;
@@ -162,6 +166,9 @@ export function DigitsView({
   buyResult,
   buyError,
   clearBuyResult,
+  sorosEnabled,
+  setSorosEnabled,
+  sorosLevel,
   logoSrc,
   appName,
   showAppName,
@@ -212,6 +219,47 @@ export function DigitsView({
     }
     await buyContract();
   }, [editMode, authState, buyContract]);
+
+  // Auto-entry: tapping a digit places the entry immediately (toggleable).
+  const [autoEntry, setAutoEntry] = useState(true);
+  // Drives the two-step arm→fire handshake below. A ref (not state) so updating
+  // it never re-renders and the arming survives across the proposal refresh.
+  const autoBuyStateRef = useRef<null | 'armed' | 'ready'>(null);
+
+  const handleDigitSelect = useCallback(
+    (digit: number) => {
+      const changed = digit !== selectedDigit;
+      setSelectedDigit(digit);
+      if (editMode || !autoEntry) return;
+      // Changing the digit re-subscribes the proposal (barrier changes), so we
+      // must wait for the fresh one before buying — otherwise we'd buy the
+      // previous digit. Tapping the already-selected digit keeps its proposal,
+      // so it can fire straight away.
+      autoBuyStateRef.current = changed ? 'armed' : 'ready';
+    },
+    [selectedDigit, setSelectedDigit, editMode, autoEntry]
+  );
+
+  // Fires the armed auto-entry once a fresh proposal for the tapped digit is
+  // ready. `proposal` briefly becomes null while re-subscribing, which is how
+  // we know the stale (previous-digit) proposal is gone.
+  useEffect(() => {
+    if (editMode || !autoEntry) {
+      autoBuyStateRef.current = null;
+      return;
+    }
+    const state = autoBuyStateRef.current;
+    if (!state) return;
+    if (state === 'armed') {
+      if (proposal === null) autoBuyStateRef.current = 'ready';
+      return;
+    }
+    // ready
+    if (proposal && !isBuying) {
+      autoBuyStateRef.current = null;
+      void handleBuy();
+    }
+  }, [autoEntry, editMode, proposal, isBuying, handleBuy]);
 
   // Purchase feedback for the configurable layouts lives HERE, not in
   // ConfigurableDigitsControls: the desktop no-code layout mounts that
@@ -310,7 +358,7 @@ export function DigitsView({
         contractMode={contractMode}
         onContractModeChange={setContractMode}
         selectedDigit={selectedDigit}
-        onDigitSelect={setSelectedDigit}
+        onDigitSelect={handleDigitSelect}
         stake={stake}
         onStakeChange={setStake}
         duration={duration}
@@ -322,6 +370,11 @@ export function DigitsView({
         isBuying={isBuying}
         isConnected={isConnected}
         isAuthenticated={authState === 'authenticated'}
+        autoEntry={autoEntry}
+        onAutoEntryChange={setAutoEntry}
+        sorosEnabled={sorosEnabled}
+        onSorosChange={setSorosEnabled}
+        sorosLevel={sorosLevel}
         editMode={editMode}
         onSelect={onSelect}
         selectedKey={selectedKey}
@@ -459,7 +512,7 @@ export function DigitsView({
                         <DigitStatsBar
                           digitStats={digitStats}
                           selectedDigit={selectedDigit}
-                          onDigitSelect={setSelectedDigit}
+                          onDigitSelect={handleDigitSelect}
                         />
                       </div>
                     )}
@@ -485,6 +538,11 @@ export function DigitsView({
                         buyError={buyError}
                         onClearBuyResult={clearBuyResult}
                         isAuthenticated={authState === 'authenticated'}
+                        autoEntry={autoEntry}
+                        onAutoEntryChange={setAutoEntry}
+                        sorosEnabled={sorosEnabled}
+                        onSorosChange={setSorosEnabled}
+                        sorosLevel={sorosLevel}
                         isMobile
                       />
                     </div>
@@ -528,7 +586,7 @@ export function DigitsView({
                     <DigitStatsBar
                       digitStats={digitStats}
                       selectedDigit={selectedDigit}
-                      onDigitSelect={setSelectedDigit}
+                      onDigitSelect={handleDigitSelect}
                     />
                   )}
                 </CardContent>
@@ -562,6 +620,11 @@ export function DigitsView({
                     buyError={buyError}
                     onClearBuyResult={clearBuyResult}
                     isAuthenticated={authState === 'authenticated'}
+                    autoEntry={autoEntry}
+                    onAutoEntryChange={setAutoEntry}
+                    sorosEnabled={sorosEnabled}
+                    onSorosChange={setSorosEnabled}
+                    sorosLevel={sorosLevel}
                   />
                 </CardContent>
               </Card>

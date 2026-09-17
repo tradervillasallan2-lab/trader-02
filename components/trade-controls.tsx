@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AutomationControls } from '@/components/automation-controls';
 import { useAppTranslations } from '@/components/custom/i18n-provider';
 import type {
   ContractMode,
@@ -37,6 +38,13 @@ interface TradeControlsProps {
   buyError: string | null;
   onClearBuyResult: () => void;
   isAuthenticated?: boolean;
+  /** Auto-entry toggle — tapping a digit places the entry immediately. */
+  autoEntry?: boolean;
+  onAutoEntryChange?: (value: boolean) => void;
+  /** Soros toggle — reinvests a winning return into the next stake. */
+  sorosEnabled?: boolean;
+  onSorosChange?: (value: boolean) => void;
+  sorosLevel?: number;
   /**
    * Pins the Buy button above the footer (fixed) instead of inline. Driven by
    * the same useIsMobile state that picks the view's layout branch — a CSS
@@ -108,6 +116,11 @@ export function TradeControls({
   buyError,
   onClearBuyResult,
   isAuthenticated,
+  autoEntry,
+  onAutoEntryChange,
+  sorosEnabled,
+  onSorosChange,
+  sorosLevel,
   isMobile,
 }: TradeControlsProps) {
   const { localize } = useAppTranslations();
@@ -195,6 +208,16 @@ export function TradeControls({
           />
         </div>
       </div>
+
+      {onAutoEntryChange && onSorosChange && (
+        <AutomationControls
+          autoEntry={autoEntry ?? false}
+          onAutoEntryChange={onAutoEntryChange}
+          sorosEnabled={sorosEnabled ?? false}
+          onSorosChange={onSorosChange}
+          sorosLevel={sorosLevel ?? 0}
+        />
+      )}
 
       <div className="rounded-lg border border-border p-2 sm:p-3 bg-muted/20 space-y-1.5 sm:space-y-2">
         <p className="text-[11px] sm:text-xs text-muted-foreground mb-0 sm:mb-1">
